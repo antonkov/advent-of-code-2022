@@ -1,4 +1,4 @@
-package adventofcode2021
+package adventofcode2022
 -- version =
 authors = "antonkov"
 -- maintainers =
@@ -16,13 +16,13 @@ authors = "antonkov"
 depends = contrib
 
 -- modules to install
-modules = AluInput
+modules = Day1 
 
 -- main file (i.e. file to load at REPL)
-main = Alu
+main = Day1
 
 -- name of executable
-executable = alu
+executable = adventofcode2022 
 -- opts =
 sourcedir = "src"
 -- builddir =
