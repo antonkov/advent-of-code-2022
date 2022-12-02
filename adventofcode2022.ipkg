@@ -16,10 +16,10 @@ authors = "antonkov"
 depends = contrib
 
 -- modules to install
-modules = Day1 
+modules = Day2 
 
 -- main file (i.e. file to load at REPL)
-main = Day1
+main = Day2
 
 -- name of executable
 executable = adventofcode2022 
