@@ -1,12 +1,13 @@
-module Alu 
+module Test.Alu
 
-import AluInput
+import System.File
 import Text.Lexer
 import Text.Parser.Core
 import Text.Parser
 import Data.List
-import Data.SnocList
+import Data.SnocList as SL
 import Data.SortedMap as M
+import Data.String
 import Control.App
 import Control.App.Console
 
@@ -180,18 +181,28 @@ applyOne op acc curState =
 apply : StateMap -> Op -> StateMap
 apply curMap op =  foldl (applyOne op) empty (M.toList curMap)
 
-getOpList : Nat -> List Op
-getOpList n = concatMap (\op => case op of
+getOpList : List String -> Nat -> List Op
+getOpList input n = concatMap (\op => case op of
         Right x => [fst x]
         Left er => []) $ map (parse op) (map (filterSpaces . fst . (lex tokens)) (take n input))
 
 initMap : StateMap
 initMap = singleton (MkState 0 0 0 0) empty
 
-finalMap : Nat -> StateMap
-finalMap n = foldl apply initMap (getOpList n)
+finalMap : List String -> Nat -> StateMap
+finalMap input n = foldl apply initMap (getOpList input n)
 
-main : IO()
+toString : List Integer -> String
+toString l = foldr (\elem, acc => show elem ++ acc) "" l
+
+solve : List String -> Maybe String
+solve input = map (\sl => toString (cast sl)) $
+                head' $ sort $
+                map snd $ filter (\(s, l) => s.z == 0) $
+                M.toList $ finalMap input (length input)
+
+partial main : IO ()
 main = do
-        n <- getLine
-        printLn (sort $ map snd $ filter (\(s, l) => s.z == 0) $ M.toList $ finalMap (cast n))
+  Right content <- readFile "src/Test/input" | Left e => printLn e
+  let input = lines $ content 
+  printLn $ solve input
