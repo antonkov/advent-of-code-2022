@@ -16,10 +16,10 @@ authors = "antonkov"
 depends = contrib
 
 -- modules to install
-modules = Test.Alu
+modules = Day3
 
 -- main file (i.e. file to load at REPL)
-main = Test.Alu
+main = Day3
 
 -- name of executable
 executable = adventofcode2022 

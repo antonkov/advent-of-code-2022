@@ -1,4 +1,4 @@
-module Intro
+module Test.Intro
 
 import Data.Vect
 import Decidable.Equality
