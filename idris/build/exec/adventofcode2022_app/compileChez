@@ -1,0 +1,1 @@
+(parameterize ([optimize-level 3] [compile-file-message #f]) (compile-program "/Users/antonkovsharov/code/idris/advent-of-code-2022/build/exec/adventofcode2022_app/adventofcode2022.ss"))
