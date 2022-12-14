@@ -1,3 +1,6 @@
+import Std.Data.List.Basic
+import Mathlib.Init.Data.List.Basic
+
 def input := "Monkey 0:
   Starting items: 79, 98
   Operation: new = old * 19
@@ -25,8 +28,6 @@ Monkey 3:
   Test: divisible by 17
     If true: throw to monkey 0
     If false: throw to monkey 1"
-
-def monkeys := input.splitOn "\n\n"
 
 inductive Operand where
   | num (n : Nat)
@@ -65,24 +66,58 @@ def parseOperation (oper : String) : Option Operation := do
   pure ⟨operator, operand⟩
 
 structure Monkey where
-  startingItems : List Nat
+  idx : Nat
   operation : Operation 
   test : Nat
   ifTrue : Nat 
   ifFalse : Nat 
 deriving Repr
 
-def parseMonkey (s : String): Option Monkey := do
+def parseMonkey (s : String): Option (Monkey × List Nat) := do
   let extractAfter (s mid : String) := s.splitOn mid |> (fun s => s[1]!)
 
-  if let [_, startingItems, operation, test, ifTrue, ifFalse] := s.splitOn "\n" then
-    Monkey.mk
-      (startingItems.splitOn ":" |> (fun s => (s[1]! : String).splitOn ",") |>.map (fun (s: String) => s.trim.toNat!))
-      (← parseOperation $ extractAfter operation ": ")
-      (extractAfter test "divisible by ").toNat!
-      (extractAfter ifTrue "monkey ").toNat!
-      (extractAfter ifFalse "monkey ").toNat!
+  if let [header, startingItems, operation, test, ifTrue, ifFalse] := s.splitOn "\n" then
+    (
+      Monkey.mk
+        ((extractAfter header "Monkey ").dropRight 1).toNat!
+        (← parseOperation $ extractAfter operation ": ")
+        (extractAfter test "divisible by ").toNat!
+        (extractAfter ifTrue "monkey ").toNat!
+        (extractAfter ifFalse "monkey ").toNat!,
+      (
+        startingItems.splitOn ":" 
+          |> (fun s => (s[1]! : String).splitOn ",") 
+          |>.map (fun (s: String) => s.trim.toNat!)
+      )
+    )
   else
     none
 
-#eval parseMonkey monkeys[0]!
+structure Transition where
+  to : Nat
+  worry : Nat
+deriving Repr
+
+def main : IO Unit := do
+  let input <- IO.FS.readFile "day11.input"
+  let monkeysStr := input.splitOn "\n\n"
+  let parseRes := monkeysStr.map parseMonkey
+    |> List.filterMap id
+  let monkeys := parseRes.map (·.1)
+  let modulo := monkeys.map (·.test) |>.foldl (· * ·) 1
+  let executeMonkey (m : Monkey) (worries: List Nat) : List Transition :=
+    let newWorries := worries.map (fun t => executeOperation m.operation t |> (· % modulo))
+    let (toTrue, toFalse) := newWorries.partition (fun w => w % m.test == 0)
+    toTrue.map (⟨m.ifTrue, ·⟩) ++ toFalse.map (⟨m.ifFalse, ·⟩)
+  let transitions : List Transition := parseRes.map (fun (m, tr) => tr.map (⟨m.idx, ·⟩)) |>.join
+  let doRound (input: List Transition × Array Nat) : List Transition × Array Nat :=
+    monkeys.foldl
+    (fun (tr, cnts) m => 
+      let ⟨ myTrans, otherTrans ⟩ := tr.partition (fun t => t.to == m.idx) 
+      (otherTrans ++ executeMonkey m (myTrans.map (·.worry)), cnts.modify m.idx (. + myTrans.length))
+    ) input
+  let allTr := (List.range 10000).foldl (fun tr _ => doRound tr) (transitions , List.repeat 0 monkeys.length |>.toArray)
+  let result := allTr.2.qsort (· < ·) |>.reverse.toList.take 2 |>.foldl (· * ·) 1
+  IO.println result
+
+#eval main
