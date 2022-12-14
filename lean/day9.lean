@@ -1,14 +1,14 @@
 import Std.Data.HashMap.Basic
 import Mathlib.Data.Vector
 
-def input := "R 4
-U 4
-L 3
-D 1
-R 4
-D 1
-L 5
-R 2"
+def input := "R 5
+U 8
+L 8
+D 3
+R 17
+D 10
+L 25
+U 20"
 
 structure Pos where
   x : Int
@@ -41,18 +41,16 @@ def dragTail (head tail : Pos) : Pos :=
   else
     { x := tail.x + (if head.x > tail.x then 1 else -1), y := tail.y + (if head.y > tail.y then 1 else -1) }
 
-structure Rope where
-  head : Pos
-  tail : Pos
-deriving Repr, Inhabited
+abbrev Rope := List Pos
   
 def solveTask (input: String) :=
   let commands := input.splitOn "\n" |>.map (λ line => if let [dir, len] := line.splitOn " " then Command.mk dir len.toNat! else panic! "Invalid input")
   let simpCommands := commands.toArray.concatMap (λ cmd => List.repeat (dirToPos cmd.dir) cmd.len |>.toArray)
   let ropePos := simpCommands.toList.scanl (λ (rope : Rope) cmd => 
-    let newHead := { x := rope.head.x + cmd.x, y := rope.head.y + cmd.y }
-    { head := newHead, tail := dragTail newHead rope.tail}) { head := Pos.mk 0 0, tail := Pos.mk 0 0 }
-  let tailPos := ropePos.map (λ rope => rope.tail)
+    let newHead: Pos := { x := rope[0]!.x + cmd.x, y := rope[0]!.y + cmd.y }
+    (rope.drop 1).foldl (fun front tail => front ++ [dragTail front.getLast! tail]) [newHead]
+  ) (List.replicate 10 $ Pos.mk 0 0)
+  let tailPos := ropePos.map (λ rope => rope.getLast! )
   tailPos.foldl (λ map pos => map.insert pos ()) Std.HashMap.empty |>.toArray |>.map (fun (k, _) => k) |>.size
 
 #eval solveTask input
@@ -65,3 +63,5 @@ def solveTask (input: String) :=
 def main : IO Unit := do
   let input ← IO.FS.readFile "day9.input"
   IO.println $ solveTask input
+
+#eval main
