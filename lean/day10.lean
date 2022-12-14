@@ -177,15 +177,6 @@ def crt (input : String) := solveTask input |>.mapIdx (fun idx (value : Int) => 
 def printRow (crt : List String) (row : Nat) :=
   crt.drop (row * 40) |>.take (40)
 
-
-def nTimes (action : (n : Nat) -> IO Unit) (n : Nat) : IO Unit :=
-  match n with
-  | 0 => pure ()
-  | n + 1 => do
-    action n
-    nTimes action n
-  
-
 def main : IO Unit := do
   let input <- IO.FS.readFile "day10.input"
   let s := crt input
