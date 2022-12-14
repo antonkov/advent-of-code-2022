@@ -1,13 +1,14 @@
 import Lake
 open Lake DSL
 
-package «advent» {
-  -- add package configuration options here
-}
+package «advent»
 
 @[default_target]
-lean_exe «advent» {
-  root := `day9
+lean_lib Advent 
+
+@[default_target]
+lean_exe advent {
+  root := `day11solve
 }
 
 require std from git "https://github.com/leanprover/std4" @ "main"
