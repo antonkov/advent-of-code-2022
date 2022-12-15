@@ -160,7 +160,7 @@ def parseCommand (s : String) : Command :=
 
 
 def solveTask (input: String) :=
-  let cycles : List Nat := [20, 60, 100, 140, 180, 220]
+  -- let cycles : List Nat := [20, 60, 100, 140, 180, 220]
   let commands := input.splitOn "\n" |>.map parseCommand
   let uniformCommands := commands.map (fun
     | Command.addx x => [Command.noop, Command.addx x]
