@@ -5,7 +5,7 @@ package «advent»
 
 @[default_target]
 lean_exe advent {
-  root := `day16
+  root := `day17
 }
 
 require std from git "https://github.com/leanprover/std4" @ "main"
