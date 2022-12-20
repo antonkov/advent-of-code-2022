@@ -45,9 +45,9 @@ def parseBlueprint (s : String) : Option Blueprint :=
   parser.run s |>.toOption
 
 structure State where
-  ores : Nat
   clays : Nat
   obsidians : Nat
+  geodes : Nat
   oreRobots : Nat
   clayRobots : Nat
   obsidianRobots : Nat
@@ -55,7 +55,7 @@ structure State where
 deriving BEq, Hashable
 
 instance : ToString State where
-  toString s := s!"Ores: {s.ores}, Clays: {s.clays}, Obsidians: {s.obsidians}, Ore robots: {s.oreRobots}, Clay robots: {s.clayRobots}, Obsidian robots: {s.obsidianRobots}, Geode robots: {s.geodeRobots}"
+  toString s := s!"Geodes: {s.geodes}, Clays: {s.clays}, Obsidians: {s.obsidians}, Ore robots: {s.oreRobots}, Clay robots: {s.clayRobots}, Obsidian robots: {s.obsidianRobots}, Geode robots: {s.geodeRobots}"
 
 def blueprints := input.splitOn "\n" |>.map parseBlueprint |>.filterMap id
 
@@ -64,58 +64,59 @@ def Lean.HashMap.updateWithMax (m : HashMap State Nat) (k : State) (newValue : N
   m.insert k value
 
 def solveTask (blueprint : Blueprint): IO Nat := do
-  let numberMinutes := 24
+  let numberMinutes := 32
   let mut dp : HashMap State Nat := HashMap.ofList [
-    ({ores := 0, clays := 0, obsidians := 0, oreRobots := 1, clayRobots := 0, obsidianRobots := 0, geodeRobots := 0}, 0)
+    ({geodes:= 0, clays := 0, obsidians := 0, oreRobots := 1, clayRobots := 0, obsidianRobots := 0, geodeRobots := 0}, 0)
   ]
   for minute in [:numberMinutes] do
     IO.println s!"Minute {minute}"
     let mut nextDp : HashMap State Nat := HashMap.ofList []
-    for (state, geodes) in dp.toList do
+    for (state, ores) in dp.toList do
       let defaultState := {state with
-        ores := state.ores + state.oreRobots,
+        geodes := state.geodes + state.geodeRobots,
         clays := state.clays + state.clayRobots,
         obsidians := state.obsidians + state.obsidianRobots
       }
-      let newGeodes := geodes + state.geodeRobots
       -- Do nothing
-      nextDp := nextDp.updateWithMax defaultState newGeodes
-      if state.ores >= blueprint.oreRobotCost then
+      if ores >= blueprint.geodeRobotCost.1 && state.obsidians >= blueprint.geodeRobotCost.2 then
         let newState := {defaultState with
-          ores := state.ores - blueprint.oreRobotCost + state.oreRobots,
-          oreRobots := state.oreRobots + 1
-        }
-        nextDp := nextDp.updateWithMax newState newGeodes
-      if state.ores >= blueprint.clayRobotCost then
-        let newState := {defaultState with
-          ores := state.ores - blueprint.clayRobotCost + state.oreRobots,
-          clayRobots := state.clayRobots + 1
-        }
-        nextDp := nextDp.updateWithMax newState newGeodes
-      if state.ores >= blueprint.obsidianRobotCost.1 && state.clays >= blueprint.obsidianRobotCost.2 then
-        let newState := {defaultState with
-          ores := state.ores - blueprint.obsidianRobotCost.1 + state.oreRobots,
-          clays := state.clays - blueprint.obsidianRobotCost.2 + state.clayRobots,
-          obsidianRobots := state.obsidianRobots + 1
-        }
-        nextDp := nextDp.updateWithMax newState newGeodes
-      if state.ores >= blueprint.geodeRobotCost.1 && state.obsidians >= blueprint.geodeRobotCost.2 then
-        let newState := {defaultState with
-          ores := state.ores - blueprint.geodeRobotCost.1 + state.oreRobots,
           obsidians := state.obsidians - blueprint.geodeRobotCost.2 + state.obsidianRobots,
           geodeRobots := state.geodeRobots + 1
         }
-        nextDp := nextDp.updateWithMax newState newGeodes
+        let newOres := ores - blueprint.geodeRobotCost.1 + state.oreRobots
+        nextDp := nextDp.updateWithMax newState newOres
+      else
+        nextDp := nextDp.updateWithMax defaultState (ores + state.oreRobots)
+
+        if ores >= blueprint.oreRobotCost then
+          let newState := {defaultState with
+            oreRobots := state.oreRobots + 1
+          }
+          let newOres := ores - blueprint.oreRobotCost + state.oreRobots
+          nextDp := nextDp.updateWithMax newState newOres
+        if ores >= blueprint.clayRobotCost then
+          let newState := {defaultState with
+            clayRobots := state.clayRobots + 1
+          }
+          let newOres := ores - blueprint.clayRobotCost + state.oreRobots
+          nextDp := nextDp.updateWithMax newState newOres
+        if ores >= blueprint.obsidianRobotCost.1 && state.clays >= blueprint.obsidianRobotCost.2 then
+          let newState := {defaultState with
+            clays := state.clays - blueprint.obsidianRobotCost.2 + state.clayRobots,
+            obsidianRobots := state.obsidianRobots + 1
+          }
+          let newOres := ores - blueprint.obsidianRobotCost.1 + state.oreRobots
+          nextDp := nextDp.updateWithMax newState newOres
     dp := nextDp
-  let max := dp.toList |>.map (fun x => x.2) |>.maximum?
+  let max := dp.toList |>.map (fun x => x.1.geodes) |>.maximum?
   pure $ max.getD 0
 
 def main := do
   let input ← IO.FS.readFile "day19.input"
   let blueprints := input.splitOn "\n" |>.map parseBlueprint |>.filterMap id
-  let mut sum := 0
-  for blueprint in blueprints do
+  let mut answer := 1
+  for blueprint in blueprints.take 3 do
     let result ← solveTask blueprint
     IO.println s!"Result for blueprint {blueprint.id}: {result}"
-    sum := sum + result * blueprint.id
-  IO.println s!"Sum: {sum}"
+    answer := answer * result
+  IO.println s!"Answer: {answer}"
