@@ -24,7 +24,7 @@ inductive Monkey where
 
 def Monkey.toString : Monkey → String
   | Monkey.number n => s!"{n}"
-  | Monkey.operation l r op => s!"({l} {r})"
+  | Monkey.operation l r .. => s!"({l} {r})"
 
 def parseInput (input : String) : HashMap String Monkey := Id.run do
   let parseLine (s : String) : Option (String × Monkey) :=
@@ -57,8 +57,8 @@ partial def eval (monkeys : HashMap String Monkey) (name : String) :=
 def solveTask (monkeys : HashMap String Monkey) : List (Int × Int) :=
   match monkeys.find? "root"  with
   | none => panic! "no root"
-  | some (Monkey.number n) => panic! "root is a number"
-  | some (Monkey.operation lmonkey rmonkey op) =>
+  | some (Monkey.number ..) => panic! "root is a number"
+  | some (Monkey.operation lmonkey rmonkey ..) =>
     -- binsearch when l == r on a from 0 to 3497999290409
     Id.run do
       let mut l := 0
